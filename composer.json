@@ -1,0 +1,43 @@
+{
+    "name": "sparkorama/microrm",
+    "description": ":description",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mark Townsend",
+            "email": "mark.townsend@express-solutions.net",
+            "homepage": "https://github.com/sparkorama"
+        }
+    ],
+    "homepage": "https://github.com/sparkorama/microrm",
+    "keywords": ["Laravel", "ORM"],
+    "require": {
+        "illuminate/support": "~5"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~7.0",
+        "mockery/mockery": "^1.1",
+        "orchestra/testbench": "~3.0",
+        "sempro/phpunit-pretty-print": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "sparkorama\\microrm\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "sparkorama\\microrm\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "sparkorama\\microrm\\micrormServiceProvider"
+            ],
+            "aliases": {
+                "microrm": "sparkorama\\microrm\\Facades\\microrm"
+            }
+        }
+    }
+}
