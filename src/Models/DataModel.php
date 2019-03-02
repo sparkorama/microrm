@@ -10,7 +10,11 @@ abstract class Data_Model
 
     protected $databaseConnection;
     protected $databaseTable;
+    
     protected $idFieldName = 'id';
+    protected $createdFieldName = 'created_at';
+    protected $updatedFieldName = 'updated_at';
+    
     protected $defaultFields = '*';
 
     protected function baseQuery() {
@@ -21,8 +25,8 @@ abstract class Data_Model
         
     public function create($data) {
         //Set the created_at field
-        if ( ! array_key_exists('created_at', $data) or empty($data['created_at'])) {
-            $data['created_at'] = Carbon::now();
+        if ( ! array_key_exists($this->createdFieldName, $data) or empty($data[$this->createdFieldName])) {
+            $data[$this->createdFieldName] = Carbon::now();
         }
         //Unset any fields not in the schema
         $columns = \DB::connection($this->databaseConnection)->getSchemaBuilder()->getColumnListing($this->databaseTable);
@@ -36,16 +40,14 @@ abstract class Data_Model
             return DB::connection($this->databaseConnection)->table($this->databaseTable)->insertGetId($data);
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            \Log::error($error_message);
-            \Helper::send_email_alert(get_class($this).' Processing Error', $error_message, array());
-            return false;
+            throw new Exception($error_message);
         }
     }
     
     public function update($id, $data)
     {
         //Set the updated_at field
-        $data['updated_at'] = Carbon::now();
+        $data[$this->updatedFieldName] = Carbon::now();
         //Unset any fields not in the schema
         $columns = \DB::connection($this->databaseConnection)->getSchemaBuilder()->getColumnListing($this->databaseTable);
         foreach (array_keys($data) as $key) {
@@ -58,9 +60,7 @@ abstract class Data_Model
             return ($row_count >= 0);
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            \Log::error($error_message);
-            \Helper::send_email_alert(get_class($this).' Processing Error', $error_message, array());
-            return false;
+            throw new Exception($error_message);
         }
     }
     
@@ -75,9 +75,7 @@ abstract class Data_Model
             return $query->get();
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            \Log::error($error_message);
-            \Helper::send_email_alert(get_class($this).' Processing Error', $error_message);
-            return false;
+            throw new Exception($error_message);
         }
     }
         
@@ -87,9 +85,7 @@ abstract class Data_Model
             return $query->where($this->idFieldName, '=', $id)->first();
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            \Log::error($error_message);
-            \Helper::send_email_alert(get_class($this).' Processing Error', $error_message);
-            return false;
+            throw new Exception($error_message);
         }
     }
 
@@ -107,13 +103,7 @@ abstract class Data_Model
             }
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            $error_data = array(
-                'field'     => $field,
-                'data'      => $value,
-            );
-            \Log::error($error_message);
-            \Helper::send_email_alert(get_class($this).' Processing Error', $error_message, $error_data);
-            return false;
+            throw new Exception($error_message);
         }
     }
     
