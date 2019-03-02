@@ -2,6 +2,8 @@
 
 namespace sparkorama\microrm;
 
+use sparkorama\microrm\Contracts\DataModel as DataModelContract;
+
 use Illuminate\Support\ServiceProvider;
 
 class micrormServiceProvider extends ServiceProvider
@@ -18,6 +20,8 @@ class micrormServiceProvider extends ServiceProvider
         // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
+        $this->app->bind(DataModelContract::class, sparkorama\microrm\Models\Data_Model::class);
+        
         // Publishing is only necessary when using the CLI.
         if ($this->app->runningInConsole()) {
             $this->bootForConsole();

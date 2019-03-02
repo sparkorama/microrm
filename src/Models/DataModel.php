@@ -2,18 +2,26 @@
 
 namespace sparkorama\microrm\Models;
 
+use sparkorama\microrm\Exceptions\MicrormCreateQueryError;
+use sparkorama\microrm\Exceptions\MicrormUpdateQueryError;
+use sparkorama\microrm\Exceptions\MicrormDeleteQueryError;
+use sparkorama\microrm\Exceptions\MicrormSelectQueryError;
+use sparkorama\microrm\Contracts\DataModel as DataModelContract;
+
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-abstract class Data_Model
+abstract class Data_Model implements DataModelContract
 {
 
     protected $databaseConnection;
     protected $databaseTable;
     
     protected $idFieldName = 'id';
-    protected $createdFieldName = 'created_at';
-    protected $updatedFieldName = 'updated_at';
+    protected $deletedFieldName = 'deleted';
+    protected $createdAtFieldName = 'created_at';
+    protected $updatedAtFieldName = 'updated_at';
+    protected $deletedAtFieldName = 'deleted_at';
     
     protected $defaultFields = '*';
 
@@ -25,8 +33,8 @@ abstract class Data_Model
         
     public function create($data) {
         //Set the created_at field
-        if ( ! array_key_exists($this->createdFieldName, $data) or empty($data[$this->createdFieldName])) {
-            $data[$this->createdFieldName] = Carbon::now();
+        if ( ! array_key_exists($this->createdAtFieldName, $data) or empty($data[$this->createdAtFieldName])) {
+            $data[$this->createdAtFieldName] = Carbon::now();
         }
         //Unset any fields not in the schema
         $columns = \DB::connection($this->databaseConnection)->getSchemaBuilder()->getColumnListing($this->databaseTable);
@@ -40,14 +48,14 @@ abstract class Data_Model
             return DB::connection($this->databaseConnection)->table($this->databaseTable)->insertGetId($data);
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            throw new Exception($error_message);
+            throw new MicrormCreateQueryError($error_message);
         }
     }
     
     public function update($id, $data)
     {
         //Set the updated_at field
-        $data[$this->updatedFieldName] = Carbon::now();
+        $data[$this->updatedAtFieldName] = Carbon::now();
         //Unset any fields not in the schema
         $columns = \DB::connection($this->databaseConnection)->getSchemaBuilder()->getColumnListing($this->databaseTable);
         foreach (array_keys($data) as $key) {
@@ -60,7 +68,39 @@ abstract class Data_Model
             return ($row_count >= 0);
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            throw new Exception($error_message);
+            throw new MicrormUpdateQueryError($error_message);
+        }
+    }
+    
+    public function delete($id)
+    {
+        //Set the flag & timestamp
+        $data[$this->deletedFieldName] = true;
+        $data[$this->deletedAtFieldName] = Carbon::now();
+        //Unset any fields not in the schema
+        $columns = \DB::connection($this->databaseConnection)->getSchemaBuilder()->getColumnListing($this->databaseTable);
+        foreach (array_keys($data) as $key) {
+            if ( ! in_array($key, $columns)) {
+                unset($data[$key]);
+            }
+        }
+        try {
+            $row_count = DB::connection($this->databaseConnection)->table($this->databaseTable)->where($this->idFieldName, '=', $id)->update($data);
+            return ($row_count >= 0);
+        } catch (\PDOException $e) {
+            $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
+            throw new MicrormUpdateQueryError($error_message);
+        }
+    }
+    
+    public function purge($id)
+    {
+        try {
+            $row_count = DB::connection($this->databaseConnection)->table($this->databaseTable)->where($this->idFieldName, '=', $id)->delete();
+            return ($row_count >= 0);
+        } catch (\PDOException $e) {
+            $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
+            throw new MicrormDeleteQueryError($error_message);
         }
     }
     
@@ -75,7 +115,7 @@ abstract class Data_Model
             return $query->get();
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            throw new Exception($error_message);
+            throw new MicrormSelectQueryError($error_message);
         }
     }
         
@@ -85,7 +125,7 @@ abstract class Data_Model
             return $query->where($this->idFieldName, '=', $id)->first();
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            throw new Exception($error_message);
+            throw new MicrormSelectQueryError($error_message);
         }
     }
 
@@ -103,7 +143,7 @@ abstract class Data_Model
             }
         } catch (\PDOException $e) {
             $error_message = get_class($this).'::'.__FUNCTION__.' ERROR - '.$e->getMessage();
-            throw new Exception($error_message);
+            throw new MicrormSelectQueryError($error_message);
         }
     }
     
